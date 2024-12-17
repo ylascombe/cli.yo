@@ -40,29 +40,21 @@ var debugPodCmd = &cobra.Command{
 		if err != nil {
 			panic(err.Error())
 		}
-		namespace := "default"
-		podName := "debug-pod"
-
-		exists := alreadyExist(clientset, podName, namespace)
+		exists := alreadyExist(clientset, PodName, Namespace)
 		if !exists {
-			createPod(clientset, podName, namespace)
+			createPod(clientset, PodName, Namespace)
 		}
-		execCommandInPod(config, clientset, podName, namespace, []string{"bash"})
+		execCommandInPod(config, clientset, PodName, Namespace, []string{"bash"})
 	},
 }
 
+var Namespace string
+var PodName string
+
 func init() {
 	kubeCmd.AddCommand(debugPodCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// debugPodCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// debugPodCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	debugPodCmd.Flags().StringVarP(&PodName, "name", "p", "debug-pod", "Debug pod name")
+	debugPodCmd.Flags().StringVarP(&Namespace, "namespace", "n", "default", "Namespace on which debug pod will be created")
 }
 
 func setContext() (*rest.Config, *kubernetes.Clientset, error) {
