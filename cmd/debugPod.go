@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,7 +43,10 @@ var debugPodCmd = &cobra.Command{
 		namespace := "default"
 		podName := "debug-pod"
 
-		createPod(clientset, podName, namespace)
+		exists := alreadyExist(clientset, podName, namespace)
+		if !exists {
+			createPod(clientset, podName, namespace)
+		}
 		execCommandInPod(config, clientset, podName, namespace, []string{"bash"})
 	},
 }
@@ -177,4 +181,24 @@ func execCommandInPod(config *rest.Config, clientset *kubernetes.Clientset, podN
 
 	fmt.Printf("Command successfully executed in pod '%s'\n", podName)
 	return nil
+}
+
+func alreadyExist(clientset *kubernetes.Clientset, podName string, namespace string) bool {
+	// Examples for error handling:
+	// - Use helper functions like e.g. errors.IsNotFound()
+	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+	_, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if errors.IsNotFound(err) {
+		fmt.Printf("Pod %s in namespace %s not found\n", podName, namespace)
+		return false
+	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+		fmt.Printf("Error getting pod %s in namespace %s: %v\n",
+			podName, namespace, statusError.ErrStatus.Message)
+		return false
+	} else if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Printf("Found pod %s in namespace %s\n", podName, namespace)
+		return true
+	}
 }
