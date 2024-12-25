@@ -96,7 +96,6 @@ func (k Kube) CreatePod(podName string, namespace string) {
 	if err != nil {
 		panic(err.Error())
 	}
-
 }
 
 func (k Kube) waitForPodRunning(podName, namespace string) error {
@@ -174,4 +173,66 @@ func (k Kube) AlreadyExist(podName string, namespace string) bool {
 		fmt.Printf("Found pod %s in namespace %s\n", podName, namespace)
 		return true
 	}
+}
+
+func (k Kube) CreateDebugHostPod(nodeName string, podName string, namespace string) {
+	// create the clientset
+	podsClient := k.Clientset.CoreV1().Pods(namespace)
+
+	hostPathType := corev1.HostPathDirectory
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:    "main",
+					Image:   "digitalocean/doks-debug:latest",
+					Command: []string{"sleep", "infinity"},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      "host",
+							MountPath: "/host",
+						},
+					},
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: BoolAddr(true),
+					},
+				},
+			},
+			NodeSelector: map[string]string{
+				"kubernetes.io/hostname": nodeName,
+			},
+			Volumes: []corev1.Volume{
+				{
+					Name: "host",
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
+							Type: &hostPathType,
+							Path: "/",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := podsClient.Create(context.TODO(), pod, metav1.CreateOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("Pod successfully created: %s\n", result.GetName())
+
+	fmt.Println("Waiting for pod become 'Running'...")
+	err = k.waitForPodRunning(podName, namespace)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func BoolAddr(b bool) *bool {
+	boolVar := b
+	return &boolVar
 }
