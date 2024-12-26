@@ -20,7 +20,10 @@ var debugPodCmd = &cobra.Command{
 		if !exists {
 			k.CreatePod(PodName, Namespace)
 		}
-		k.ExecCommandInPod(PodName, Namespace, []string{"bash"})
+		err := k.ExecCommandInPod(PodName, Namespace, []string{"bash"})
+		if err != nil {
+			panic(err.Error())
+		}
 	},
 }
 

@@ -19,9 +19,15 @@ and host volumes mount in order to debug node`,
 		k := kube.NewKube()
 		exists := k.AlreadyExist(PodName, Namespace)
 		if !exists {
-			k.CreateDebugHostPod(NodeName, PodName, Namespace)
+			err := k.CreateDebugHostPod(NodeName, PodName, Namespace)
+			if err != nil {
+				panic((err.Error()))
+			}
 		}
-		k.ExecCommandInPod(PodName, Namespace, []string{"bash"})
+		err := k.ExecCommandInPod(PodName, Namespace, []string{"bash"})
+		if err != nil {
+			panic(err.Error())
+		}
 	},
 }
 
@@ -30,7 +36,10 @@ var NodeName string
 func init() {
 	kubeCmd.AddCommand(debugHostCmd)
 	debugHostCmd.Flags().StringVarP(&NodeName, "hostname", "j", "", "Kubernetes node name to debug")
-	debugHostCmd.MarkFlagRequired("hostname")
+	err := debugHostCmd.MarkFlagRequired("hostname")
+	if err != nil {
+		panic(err.Error())
+	}
 
 	debugHostCmd.Flags().StringVarP(&PodName, "name", "p", "debug-pod", "Debug pod name")
 	debugHostCmd.Flags().StringVarP(&Namespace, "namespace", "n", "default", "Namespace on which debug pod will be created")

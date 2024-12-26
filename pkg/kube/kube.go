@@ -22,8 +22,8 @@ import (
 )
 
 type Kube struct {
-	Clientset *kubernetes.Clientset `json:omit`
-	Config    *rest.Config          `json:omit`
+	Clientset *kubernetes.Clientset `json:"-"`
+	Config    *rest.Config          `json:"-"`
 }
 
 func NewKube() *Kube {
@@ -175,7 +175,7 @@ func (k Kube) AlreadyExist(podName string, namespace string) bool {
 	}
 }
 
-func (k Kube) CreateDebugHostPod(nodeName string, podName string, namespace string) {
+func (k Kube) CreateDebugHostPod(nodeName string, podName string, namespace string) error {
 	// create the clientset
 	podsClient := k.Clientset.CoreV1().Pods(namespace)
 
@@ -230,6 +230,7 @@ func (k Kube) CreateDebugHostPod(nodeName string, podName string, namespace stri
 	if err != nil {
 		panic(err.Error())
 	}
+	return nil
 }
 
 func BoolAddr(b bool) *bool {
